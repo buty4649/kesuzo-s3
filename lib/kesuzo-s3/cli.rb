@@ -38,6 +38,23 @@ module KesuzoS3
         })
         progress += r.deleted.length
         puts "#{progress} deleted..."
+
+        delete_retry = 0
+        while r.errors.length > 0 && delete_retry < 3
+          delete_retry += 1
+
+          r = s3.delete_objects({
+            bucket: bucket,
+            delete: {objects: r.errors.map{|k| {key: k.key}}}
+          })
+          progress += r.deleted.length
+          puts "#{progress} deleted..."
+        end
+
+        if r.errors.length > 0
+          puts "Delete Failed..."
+          r.errors.each {|o| puts "-> #{o.key}"}
+        end
       end
 
       puts "Delete bucket."
